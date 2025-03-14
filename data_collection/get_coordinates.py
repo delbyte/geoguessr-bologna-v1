@@ -3,6 +3,7 @@ from shapely.geometry import LineString, Point
 import osmnx as ox
 import pandas as pd
 import folium
+import webbrowser
 
 city = "Bologna, Italy"
 
@@ -32,3 +33,18 @@ df = pd.DataFrame(coords, columns=["latitude", "longitude"]).to_csv("bologna_str
 
 
 #FOR TESTING 
+# Compute the average latitude and longitude of all valid points
+if coords:
+    avg_lat = sum(lat for lat, lon in coords) / len(coords)
+    avg_lon = sum(lon for lat, lon in coords) / len(coords)
+    map_center = [avg_lat, avg_lon]
+else:
+    map_center = [44.4949, 11.3426]  # Fallback to Bologna center if no points exist
+
+m = folium.Map(location=map_center, zoom_start=13)
+
+for lat, lon in coords:
+    folium.CircleMarker([lat, lon], radius=3, color="blue", fill=True).add_to(m)
+
+m.save("bologna_map.html")
+webbrowser.open("bologna_map.html")
