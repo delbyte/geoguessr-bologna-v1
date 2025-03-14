@@ -9,6 +9,9 @@ city = "Bologna, Italy"
 
 G = ox.graph_from_place(city, network_type="drive")
 
+ox.plot_graph(G)
+
+
 edges = ox.graph_to_gdfs(G, nodes=False)
 
 spacing = 10
@@ -27,6 +30,9 @@ for road in edges.geometry:
 
 coords = [(point.y, point.x) for point in all_points]
 
+print(edges.head())
+print(len(edges))
+
 
 #TODO - NEED TO CHECK IF STREETVIEW IS AVAILABLE ON MAPILLARY FOR GENERATED COORDS from coords
 df = pd.DataFrame(coords, columns=["latitude", "longitude"]).to_csv("bologna_streetview_coords.csv", index =False)
@@ -44,7 +50,9 @@ else:
 m = folium.Map(location=map_center, zoom_start=13)
 
 for lat, lon in coords:
-    folium.CircleMarker([lat, lon], radius=3, color="blue", fill=True).add_to(m)
+    folium.CircleMarker([lat, lon], radius=15, color="pink", fill=True).add_to(m)
+
+print(coords)
 
 m.save("bologna_map.html")
 webbrowser.open("bologna_map.html")
