@@ -1,13 +1,14 @@
 import numpy as np
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Point
 import osmnx as ox
+import geopandas as gpd
 import pandas as pd
 import folium
 import webbrowser
 
 city = "Bologna, Italy"
 
-# Get road network in lat/lon (default WGS84)
+# Get road network in lat/lon (WGS84)
 G = ox.graph_from_place(city, network_type="drive")
 
 # Convert to GeoDataFrame
@@ -20,7 +21,7 @@ spacing = 10  # Spacing in meters
 
 def interpolate_points(road, spacing):
     """Generate interpolated points along a road with given spacing."""
-    length = road.length  # Length in meters (since we're using UTM)
+    length = road.length  # Length in meters
     num_points = max(1, int(length // spacing))  # At least 1 point per road
     return [road.interpolate(d) for d in np.linspace(0, length, num_points)]
 
@@ -30,9 +31,14 @@ for road in edges.geometry:
     if isinstance(road, LineString):
         all_points.extend(interpolate_points(road, spacing))
 
-# Convert back to latitude/longitude
-edges = edges.to_crs(epsg=4326)  # Convert back to WGS84
-coords = [(point.y, point.x) for point in all_points]
+# Convert interpolated points to a GeoDataFrame
+gdf_points = gpd.GeoDataFrame(geometry=all_points, crs="EPSG:32632")
+
+# Transform back to WGS84 (lat/lon)
+gdf_points = gdf_points.to_crs(epsg=4326)
+
+# Extract coordinates
+coords = [(point.y, point.x) for point in gdf_points.geometry]
 
 print(f"Generated {len(coords)} points")  # Debugging
 
@@ -49,7 +55,7 @@ else:
 
 m = folium.Map(location=map_center, zoom_start=13)
 for lat, lon in coords:
-    folium.CircleMarker([lat, lon], radius=5, color="pink", fill=True).add_to(m)
+    folium.CircleMarker([lat, lon], radius=5, color="blue", fill=True).add_to(m)
 
 m.save("bologna_map.html")
 webbrowser.open("bologna_map.html")
