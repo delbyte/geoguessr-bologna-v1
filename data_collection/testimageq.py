@@ -32,24 +32,36 @@ convex_hull = unary_union(road_geometries).convex_hull
 convex_hull_geojson = geojson.Feature(geometry=convex_hull.__geo_interface__, properties={})
 
 # Step 4: Fetch Mapillary Images Within Bologna's Convex Hull
-def fetch_mapillary_images(geometry):
+from shapely.geometry import shape
+
+def fetch_mapillary_images(geometry_geojson):
     """Fetch all images from Mapillary within the provided geometry using pagination."""
+    
+    # Convert GeoJSON to a Shapely object
+    geometry = shape(geometry_geojson)
+
+    # Convert Shapely object to WKT format
+    geometry_wkt = geometry.wkt  
+
     params = {
-        "access_token": access_token,  # Correct way to authenticate
+        "access_token": access_token,
         "fields": "id,geometry",
         "limit": 100
     }
+
     url = MAPILLARY_IMAGES_ENDPOINT
     images = []
 
     while url:
-        response = requests.post(url, json={"geometry": geometry}, params=params)
+        # Send WKT as geometry (not GeoJSON)
+        response = requests.post(url, json={"geometry": geometry_wkt}, params=params)
         response.raise_for_status()
         data = response.json()
         images.extend(data.get("data", []))
         url = data.get("paging", {}).get("next")  # Pagination
 
     return images
+
 
 
 images = fetch_mapillary_images(convex_hull_geojson["geometry"])
