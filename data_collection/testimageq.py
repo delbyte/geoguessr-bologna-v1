@@ -11,7 +11,7 @@ import webbrowser
 # Step 0: OAuth Authentication
 # ===============================
 # Replace with your Mapillary Client ID
-CLIENT_ID = "YOUR_MAPILLARY_CLIENT_ID"
+CLIENT_ID = "10021959651168330"
 AUTH_URL = f"https://www.mapillary.com/connect?client_id={CLIENT_ID}&response_type=token"
 
 print("Please open the following URL in your browser to authenticate with Mapillary:")
