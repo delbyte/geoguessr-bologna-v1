@@ -1,91 +1,107 @@
 import requests
-import json
 import osmnx as ox
 import folium
-from shapely.geometry import shape, Polygon, MultiPolygon
 from shapely.ops import unary_union
-import geojson
+from shapely.geometry import Point
+import time
+import json
 import webbrowser
 
-# Mapillary Client ID
-CLIENT_ID = "10021959651168330"
+# ===============================
+# Step 0: OAuth Authentication
+# ===============================
+# Replace with your Mapillary Client ID
+CLIENT_ID = "YOUR_MAPILLARY_CLIENT_ID"
+AUTH_URL = f"https://www.mapillary.com/connect?client_id={CLIENT_ID}&response_type=token"
 
-# OAuth URL for user authorization
-AUTH_URL = f"https://www.mapillary.com/connect?client_id=10021959651168330"
+print("Please open the following URL in your browser to authenticate with Mapillary:")
+print(AUTH_URL)
+webbrowser.open(AUTH_URL)
 
-# Step 1: Get Authorization
-print(f"Open this URL in your browser and log in to authorize:\n{AUTH_URL}")
-webbrowser.open(AUTH_URL)  
-access_token = input("Paste the access token from the redirected URL: ")
+access_token = input("After authenticating, please paste the access token here: ")
 
-# Step 2: Define API Endpoint & Headers
-MAPILLARY_IMAGES_ENDPOINT = "https://graph.mapillary.com/images"
-headers = {"Authorization": f"Bearer {access_token}"}
-# Step 3: Get Bologna's Road Network & Compute Convex Hull
+# ========================================
+# Step 1: Compute Convex Hull of Bologna's Road Network
+# ========================================
 city = "Bologna, Italy"
 G = ox.graph_from_place(city, network_type="drive")
-
 edges = ox.graph_to_gdfs(G, nodes=False)
-road_geometries = edges.geometry.tolist()
-convex_hull = unary_union(road_geometries).convex_hull
 
-convex_hull_geojson = geojson.Feature(geometry=convex_hull.__geo_interface__, properties={})
+# Combine all road geometries and compute the convex hull
+convex_hull = unary_union(edges.geometry.tolist()).convex_hull
 
-# Step 4: Fetch Mapillary Images Within Bologna's Convex Hull
-from shapely.geometry import shape
+# Derive the bounding box from the convex hull (format: west,south,east,north)
+minx, miny, maxx, maxy = convex_hull.bounds
+bbox = f"{minx},{miny},{maxx},{maxy}"
+print(f"Computed bounding box: {bbox}")
 
-def fetch_mapillary_images(geometry_geojson):
-    """Fetch all images from Mapillary within the provided geometry using pagination."""
-    
-    # Convert GeoJSON to a Shapely object
-    geometry = shape(geometry_geojson)
+# ========================================
+# Step 2: Fetch Mapillary Images Within the Bounding Box Using Pagination
+# ========================================
+MAPILLARY_IMAGES_ENDPOINT = "https://graph.mapillary.com/images"
 
-    # Convert Shapely object to WKT format
-    geometry_wkt = geometry.wkt  
-
+def fetch_mapillary_images(bbox, access_token):
     params = {
         "access_token": access_token,
         "fields": "id,geometry",
-        "limit": 100
+        "limit": 100,  # Maximum allowed per request
+        "bbox": bbox
     }
-
-    url = MAPILLARY_IMAGES_ENDPOINT
     images = []
+    url = MAPILLARY_IMAGES_ENDPOINT
 
     while url:
-        # Send WKT as geometry (not GeoJSON)
-        response = requests.post(url, json={"geometry": geometry_wkt}, params=params)
+        response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
         images.extend(data.get("data", []))
-        url = data.get("paging", {}).get("next")  # Pagination
-
+        # Use the pagination URL from the response, if available
+        url = data.get("paging", {}).get("next")
+        # Clear params for subsequent requests since they're now in the URL
+        params = {}
+        # Pause briefly to avoid rate limiting
+        time.sleep(0.2)
     return images
 
+images = fetch_mapillary_images(bbox, access_token)
 
+# ========================================
+# Step 3: Filter Images to Only Those Within the Convex Hull
+# ========================================
+def is_within_convex_hull(image, convex_hull):
+    # Mapillary returns coordinates as [longitude, latitude]
+    lon, lat = image["geometry"]["coordinates"]
+    point = Point(lon, lat)
+    return convex_hull.contains(point)
 
-images = fetch_mapillary_images(convex_hull_geojson["geometry"])
+filtered_images = [img for img in images if is_within_convex_hull(img, convex_hull)]
 
-# Step 5: Estimate Disk Space Needed
-ESTIMATED_SIZE_MB_PER_IMAGE = 0.5
-total_images = len(images)
+# ========================================
+# Step 4: Estimate Storage Requirements and Save Coordinates
+# ========================================
+ESTIMATED_SIZE_MB_PER_IMAGE = 0.5  # Estimated average size per image in MB
+total_images = len(filtered_images)
 total_estimated_size_mb = total_images * ESTIMATED_SIZE_MB_PER_IMAGE
 
-print(f"Total images: {total_images}")
+print(f"Total number of images within convex hull: {total_images}")
 print(f"Estimated disk space needed: {total_estimated_size_mb:.2f} MB")
 
-# Step 6: Save Image Coordinates
-image_coords = [{"id": img["id"], "coordinates": img["geometry"]["coordinates"]} for img in images]
+# Save image coordinates and IDs to a JSON file
+image_coords = [{"id": img["id"], "coordinates": img["geometry"]["coordinates"]} for img in filtered_images]
 with open("bologna_image_coordinates.json", "w") as f:
     json.dump(image_coords, f, indent=4)
 
-# Step 7: Create & Display a Folium Map
+# ========================================
+# Step 5: Map the Image Locations Using Folium
+# ========================================
 map_center = [convex_hull.centroid.y, convex_hull.centroid.x]
 m = folium.Map(location=map_center, zoom_start=13)
 
 for img in image_coords:
-    lat, lon = img["coordinates"][1], img["coordinates"][0]
+    # Unpack coordinates: Mapillary returns [longitude, latitude]
+    lon, lat = img["coordinates"]
     folium.CircleMarker([lat, lon], radius=5, color="blue", fill=True).add_to(m)
 
 m.save("bologna_map.html")
-print("Map saved as bologna_map.html")
+print("Map saved as 'bologna_map.html'")
+webbrowser.open("bologna_map.html")
