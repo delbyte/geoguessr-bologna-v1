@@ -6,7 +6,7 @@ from shapely.geometry import Point
 import time
 import json
 import webbrowser
-
+"""
 # ===============================
 # Step 0: OAuth Authentication
 # ===============================
@@ -19,7 +19,7 @@ print(AUTH_URL)
 webbrowser.open(AUTH_URL)
 
 access_token = input("After authenticating, please paste the access token here: ")
-
+"""
 # ========================================
 # Step 1: Compute Convex Hull of Bologna's Road Network
 # ========================================
@@ -32,9 +32,12 @@ convex_hull = unary_union(edges.geometry.tolist()).convex_hull
 
 # Derive the bounding box from the convex hull (format: west,south,east,north)
 minx, miny, maxx, maxy = convex_hull.bounds
-bbox = f"{minx},{miny},{maxx},{maxy}"
-print(f"Computed bounding box: {bbox}")
+mybbox = ([minx, miny, maxx, maxy])
+print(f"Computed bounding box: {mybbox}")
 
+B = ox.graph_from_bbox(mybbox, network_type="all")
+ox.plot_graph(B)
+"""
 # ========================================
 # Step 2: Fetch Mapillary Images Within the Bounding Box Using Pagination
 # ========================================
@@ -105,3 +108,4 @@ for img in image_coords:
 m.save("bologna_map.html")
 print("Map saved as 'bologna_map.html'")
 webbrowser.open("bologna_map.html")
+"""
