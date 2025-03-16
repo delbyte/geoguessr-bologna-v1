@@ -1,111 +1,37 @@
-import requests
 import osmnx as ox
 import folium
-from shapely.ops import unary_union
-from shapely.geometry import Point
-import time
 import json
-import webbrowser
-"""
-# ===============================
-# Step 0: OAuth Authentication
-# ===============================
-# Replace with your Mapillary Client ID
-CLIENT_ID = "10021959651168330"
-AUTH_URL = f"https://www.mapillary.com/connect?client_id={CLIENT_ID}&response_type=token"
+import subprocess
+import geopandas as gpd
+from shapely.geometry import Point
 
-print("Please open the following URL in your browser to authenticate with Mapillary:")
-print(AUTH_URL)
-webbrowser.open(AUTH_URL)
+# Step 1: Get the bounding box of Bologna using OSMnx
+place_name = "Bologna, Italy"
+graph = ox.graph_from_place(place_name, network_type="all")
+gdf = ox.geocode_to_gdf(place_name)
+minx, miny, maxx, maxy = gdf.total_bounds  # Get bounding box
 
-access_token = input("After authenticating, please paste the access token here: ")
-"""
-# ========================================
-# Step 1: Compute Convex Hull of Bologna's Road Network
-# ========================================
-city = "Bologna, Italy"
-G = ox.graph_from_place(city, network_type="drive")
-edges = ox.graph_to_gdfs(G, nodes=False)
+# Step 2: Use mapillary_tools to fetch image metadata
+output_file = "mapillary_images.geojson"
+command = f"mapillary_tools search --bbox {miny},{minx},{maxy},{maxx} --geojson --output {output_file}"
+subprocess.run(command, shell=True, check=True)
 
-# Combine all road geometries and compute the convex hull
-convex_hull = unary_union(edges.geometry.tolist()).convex_hull
+# Step 3: Parse the GeoJSON file to extract image coordinates
+with open(output_file, "r") as f:
+    data = json.load(f)
 
-# Derive the bounding box from the convex hull (format: west,south,east,north)
-minx, miny, maxx, maxy = convex_hull.bounds
-mybbox = ([minx, miny, maxx, maxy])
-print(f"Computed bounding box: {mybbox}")
+image_coords = []
+for feature in data["features"]:
+    lon, lat = feature["geometry"]["coordinates"]
+    image_coords.append((lat, lon))
 
-B = ox.graph_from_bbox(mybbox, network_type="all")
-ox.plot_graph(B)
-"""
-# ========================================
-# Step 2: Fetch Mapillary Images Within the Bounding Box Using Pagination
-# ========================================
-MAPILLARY_IMAGES_ENDPOINT = "https://graph.mapillary.com/images"
+# Step 4: Display images on a folium map
+bologna_map = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=13)
 
-def fetch_mapillary_images(bbox, access_token):
-    params = {
-        "access_token": access_token,
-        "fields": "id,geometry",
-        "limit": 100,  # Maximum allowed per request
-        "bbox": bbox
-    }
-    images = []
-    url = MAPILLARY_IMAGES_ENDPOINT
+for lat, lon in image_coords:
+    folium.Marker(location=[lat, lon], popup=f"Image at ({lat}, {lon})").add_to(bologna_map)
 
-    while url:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-        images.extend(data.get("data", []))
-        # Use the pagination URL from the response, if available
-        url = data.get("paging", {}).get("next")
-        # Clear params for subsequent requests since they're now in the URL
-        params = {}
-        # Pause briefly to avoid rate limiting
-        time.sleep(0.2)
-    return images
-
-images = fetch_mapillary_images(bbox, access_token)
-
-# ========================================
-# Step 3: Filter Images to Only Those Within the Convex Hull
-# ========================================
-def is_within_convex_hull(image, convex_hull):
-    # Mapillary returns coordinates as [longitude, latitude]
-    lon, lat = image["geometry"]["coordinates"]
-    point = Point(lon, lat)
-    return convex_hull.contains(point)
-
-filtered_images = [img for img in images if is_within_convex_hull(img, convex_hull)]
-
-# ========================================
-# Step 4: Estimate Storage Requirements and Save Coordinates
-# ========================================
-ESTIMATED_SIZE_MB_PER_IMAGE = 0.5  # Estimated average size per image in MB
-total_images = len(filtered_images)
-total_estimated_size_mb = total_images * ESTIMATED_SIZE_MB_PER_IMAGE
-
-print(f"Total number of images within convex hull: {total_images}")
-print(f"Estimated disk space needed: {total_estimated_size_mb:.2f} MB")
-
-# Save image coordinates and IDs to a JSON file
-image_coords = [{"id": img["id"], "coordinates": img["geometry"]["coordinates"]} for img in filtered_images]
-with open("bologna_image_coordinates.json", "w") as f:
-    json.dump(image_coords, f, indent=4)
-
-# ========================================
-# Step 5: Map the Image Locations Using Folium
-# ========================================
-map_center = [convex_hull.centroid.y, convex_hull.centroid.x]
-m = folium.Map(location=map_center, zoom_start=13)
-
-for img in image_coords:
-    # Unpack coordinates: Mapillary returns [longitude, latitude]
-    lon, lat = img["coordinates"]
-    folium.CircleMarker([lat, lon], radius=5, color="blue", fill=True).add_to(m)
-
-m.save("bologna_map.html")
-print("Map saved as 'bologna_map.html'")
-webbrowser.open("bologna_map.html")
-"""
+# Step 5: Print total image count and save the map
+print(f"Total images found: {len(image_coords)}")
+bologna_map.save("bologna_map.html")
+print("Map saved as bologna_map.html")
