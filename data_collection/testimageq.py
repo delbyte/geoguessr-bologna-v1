@@ -1,57 +1,51 @@
-import osmnx as ox
-import folium
+import requests
 import json
-import subprocess
-import geopandas as gpd
-from shapely.geometry import Point
+import folium
+import webbrowser
 
-# Step 1: Get the bounding box of Bologna using OSMnx
-print("Fetching bounding box for Bologna, Italy...")
-place_name = "Bologna, Italy"
-graph = ox.graph_from_place(place_name, network_type="all")
-gdf = ox.geocode_to_gdf(place_name)
-minx, miny, maxx, maxy = gdf.total_bounds  # Get bounding box
-print(f"Bounding box: MinX={minx}, MinY={miny}, MaxX={maxx}, MaxY={maxy}")
+# Replace with your Mapillary Client ID
+CLIENT_ID = "10021959651168330"
 
-# Step 2: Use mapillary_tools to fetch image metadata
-output_file = "mapillary_images.geojson"
-command = f"mapillary_tools search --bbox {miny},{minx},{maxy},{maxx} --geojson --output {output_file}"
-print(f"Running Mapillary command:\n{command}")
+# Redirect user to authorize
+auth_url = f"https://www.mapillary.com/connect?client_id={CLIENT_ID}&response_type=token&scope=user:read"
+print("Opening browser for authentication...")
+webbrowser.open(auth_url)
 
-try:
-    subprocess.run(command, shell=True, check=True)
-    print("Mapillary data successfully retrieved and saved.")
-except subprocess.CalledProcessError as e:
-    print(f"Error fetching Mapillary data: {e}")
-    exit(1)
+MAPILLARY_ACCESS_TOKEN = input("Enter your Mapillary access token: ")
 
-# Step 3: Parse the GeoJSON file to extract image coordinates
-print(f"Reading GeoJSON file: {output_file}...")
-try:
-    with open(output_file, "r") as f:
-        data = json.load(f)
-    print("GeoJSON file successfully loaded.")
-except FileNotFoundError:
-    print(f"Error: {output_file} not found.")
-    exit(1)
+print("After authorizing, copy the access token from the URL and paste it in the script.")
 
-image_coords = []
-print("Extracting image coordinates...")
-for feature in data["features"]:
-    lon, lat = feature["geometry"]["coordinates"]
-    image_coords.append((lat, lon))
-print(f"Extracted {len(image_coords)} image coordinates.")
+# Define the bounding box (Bologna)
+bbox = "11.2296206,44.4210532,11.4336079,44.556094"
 
-# Step 4: Display images on a folium map
-print("Creating Folium map...")
-bologna_map = folium.Map(location=[(miny + maxy) / 2, (minx + maxx) / 2], zoom_start=13)
+# API request URL
+url = f"https://graph.mapillary.com/images?access_token={MAPILLARY_ACCESS_TOKEN}&bbox={bbox}&fields=id,geometry"
 
-print("Adding markers to the map...")
-for lat, lon in image_coords:
-    folium.Marker(location=[lat, lon], popup=f"Image at ({lat}, {lon})").add_to(bologna_map)
+print("Fetching image locations from Mapillary...")
+response = requests.get(url)
 
-# Step 5: Print total image count and save the map
-print(f"Total images found: {len(image_coords)}")
-bologna_map.save("bologna_map.html")
-print("Map successfully saved as bologna_map.html. Open it in a browser to view.")
+if response.status_code == 200:
+    data = response.json()
+    print("Data received successfully.")
 
+    # Extract coordinates
+    image_coords = [(img["geometry"]["coordinates"][1], img["geometry"]["coordinates"][0]) for img in data["data"]]
+
+    print(f"Total images found: {len(image_coords)}")
+
+    # Create a Folium map
+    print("Creating Folium map...")
+    bologna_map = folium.Map(location=[44.4939, 11.3426], zoom_start=12)
+
+    # Add markers for each image
+    print("Adding markers to the map...")
+    for lat, lon in image_coords:
+        folium.Marker(location=[lat, lon], popup=f"Image at ({lat}, {lon})").add_to(bologna_map)
+
+    # Save the map
+    print("Saving map as 'bologna_map.html'...")
+    bologna_map.save("bologna_map.html")
+
+    webbrowser.open("bologna_map.html")
+else:
+    print("Error fetching Mapillary data:", response.text)
