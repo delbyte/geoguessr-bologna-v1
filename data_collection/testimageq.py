@@ -49,3 +49,6 @@ if response.status_code == 200:
     webbrowser.open("bologna_map.html")
 else:
     print("Error fetching Mapillary data:", response.text)
+
+
+    #rest day
