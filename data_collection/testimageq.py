@@ -3,23 +3,16 @@ import json
 import folium
 import webbrowser
 
-# Replace with your Mapillary Client ID
+#Mapillary Client ID
 CLIENT_ID = "10021959651168330"
 
-# Redirect user to authorize
-auth_url = f"https://www.mapillary.com/connect?client_id={CLIENT_ID}&response_type=token&scope=user:read"
-print("Opening browser for authentication...")
-webbrowser.open(auth_url)
-
-MAPILLARY_ACCESS_TOKEN = input("Enter your Mapillary access token: ")
-
-print("After authorizing, copy the access token from the URL and paste it in the script.")
+MAPILLARY_CLIENT_TOKEN = "MLY|10021959651168330|f0e52ee7758ab85150bce8631f498ee8"
 
 # Define the bounding box (Bologna)
 bbox = "11.2296206,44.4210532,11.4336079,44.556094"
 
 # API request URL
-url = f"https://graph.mapillary.com/images?access_token={MAPILLARY_ACCESS_TOKEN}&bbox={bbox}&fields=id,geometry"
+url = f"https://graph.mapillary.com/images?access_token={MAPILLARY_CLIENT_TOKEN}&bbox={bbox}&fields=id,geometry"
 
 print("Fetching image locations from Mapillary...")
 response = requests.get(url)
@@ -49,6 +42,3 @@ if response.status_code == 200:
     webbrowser.open("bologna_map.html")
 else:
     print("Error fetching Mapillary data:", response.text)
-
-
-    #rest day
