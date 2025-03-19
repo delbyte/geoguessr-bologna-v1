@@ -64,7 +64,7 @@ for tile in tiles:
             image_coordinates[image_id] = (lng, lat)
 
 # Save the dictionary to a JSON file
-with open(os.path.join('..', 'dataset', 'unfiltered.json'), 'w') as f:
+with open(os.path.join('..', 'dataset', 'unnamed.json'), 'w') as f:
     json.dump(image_coordinates, f)
 
 # Print the dictionary of image coordinates
