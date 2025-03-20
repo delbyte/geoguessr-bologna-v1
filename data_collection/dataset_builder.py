@@ -1,7 +1,7 @@
 import json
 import csv
 
-json_file = "dataset/unnamed.json"
+json_file = "dataset/unnamed"
 csv_file = "dataset/finaldata.csv"
 image_folder = "dataset/images_resized"
 
