@@ -20,7 +20,7 @@ if not os.path.exists(images_dir):
 
 json_path = os.path.join('..', 'dataset', 'unnamed.json')
 
-# Load existing JSON data if available (to resume progress)
+# load existing JSON data if available (to resume progress)
 if os.path.exists(json_path):
     try:
         with open(json_path, 'r') as f:
@@ -40,11 +40,11 @@ for tile in tiles:
             try:
                 lng, lat = feature['geometry']['coordinates']
                 if not (west < lng < east and south < lat < north):
-                    continue  # Skip features outside bounding box
+                    continue  # skip features outside bounding box
                 
                 image_id = feature['properties']['id']
                 if image_id in image_coordinates:
-                    continue  # Skip already downloaded images
+                    continue
                 
                 header = {'Authorization': f'OAuth {access_token}'}
                 url = f'https://graph.mapillary.com/{image_id}?fields=thumb_2048_url'
@@ -52,7 +52,7 @@ for tile in tiles:
                 data = r.json()
                 image_url = data.get('thumb_2048_url')
                 if not image_url:
-                    continue  # Skip if URL is missing
+                    continue  # url missing exception
                 
                 image_path = os.path.join(images_dir, f'{image_id}.jpg')
                 with open(image_path, 'wb') as handler:
@@ -61,7 +61,7 @@ for tile in tiles:
                 image_coordinates[image_id] = (lng, lat)
                 image_count += 1
 
-                if image_count % 10 == 0:  # Save every 10 images
+                if image_count % 10 == 0:  # save every 10 images
                     with open(json_path, 'w') as f:
                         json.dump(image_coordinates, f, indent=4)
                     print(f"Saved progress at {image_count} images.")
