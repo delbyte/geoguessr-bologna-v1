@@ -1,3 +1,4 @@
 .env
 dataset/images
-dataset/unnamed.json    
+dataset/unnamed.json
+cache
