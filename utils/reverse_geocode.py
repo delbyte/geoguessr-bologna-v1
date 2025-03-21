@@ -14,7 +14,7 @@ def reverse_geocode(lat: float, lon: float) -> str:
         "zoom": 18           # maximum zoom level for detailed address
     }
     headers = {
-        "User-Agent": "GeoGuessr-Bologna-V1/1.0 (myemail@example.com)"
+        "User-Agent": "GeoGuessr-Bologna-V1/1.0"
     }
 
     try:
@@ -27,3 +27,7 @@ def reverse_geocode(lat: float, lon: float) -> str:
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {e}")
         return "Unknown location"
+
+lat, lon = 44.4949, 11.3426  # Example coordinates for Bologna
+address = reverse_geocode(lat, lon)
+print(address)
