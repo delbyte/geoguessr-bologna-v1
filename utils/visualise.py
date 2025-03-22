@@ -1,4 +1,5 @@
 import folium
+import webbrowser
 
 def plot_locations(actual_coords, predicted_coords):
     """
@@ -32,3 +33,11 @@ def plot_locations(actual_coords, predicted_coords):
     print(f"Map saved as {map_filename}")
     
     return map_filename  # You can open this file in a browser
+
+# Example usage:
+actual_coords = (44.494887, 11.342616)
+predicted_coords = (44.494887, 11.500000)
+map_filename = plot_locations(actual_coords, predicted_coords)
+print(f"Map saved as: {map_filename}")
+# This will save a map showing the actual and predicted locations in a file named "location_comparison_map.html" in the current directory.
+webbrowser.open(map_filename)  # Open the map in a web browser
