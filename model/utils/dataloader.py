@@ -54,7 +54,7 @@ transform = transforms.Compose([
 ])
 
 # Load Dataset
-csv_path = "dataset/coordinates.csv"  # Update this with your actual CSV path
+csv_path = "dataset/finaldata.csv" 
 dataset = GeolocationDataset(csv_file=csv_path, transform=transform)
 dataloader = DataLoader(dataset, batch_size=16, shuffle=True, num_workers=2)
 
