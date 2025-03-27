@@ -1,11 +1,18 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader
-from model.architectures.resnet import ResNetGeolocation
-from model.architectures.mobilenet import MobileNetGeolocation
-from model.utils.dataloader import GeolocationDataset, transform
-import os
+if __name__ == "__main__":
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    from torch.utils.data import DataLoader
+    from model.architectures.resnet import ResNetGeolocation
+    from model.architectures.mobilenet import MobileNetGeolocation
+    from model.utils.dataloader import GeolocationDataset, transform
+    import os
+    import sys
+
+print("Using Python:", sys.executable)
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {DEVICE}")    
 
 # Configurations
 CSV_PATH = "dataset/finaldata.csv"  # Update if needed
