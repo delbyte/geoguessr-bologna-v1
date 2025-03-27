@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from architectures.resnet import ResNetGeolocation
-from architectures.mobilenet import MobileNetGeolocation
+from model.architectures.resnet import ResNetGeolocation
+from model.architectures.mobilenet import MobileNetGeolocation
 from model.utils.dataloader import GeolocationDataset, transform
 import os
 
