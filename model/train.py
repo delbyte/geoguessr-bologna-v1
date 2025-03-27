@@ -13,7 +13,7 @@ BATCH_SIZE = 16
 NUM_EPOCHS = 20
 LEARNING_RATE = 0.001
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MODEL_TYPE = "resnet"  # Change to "mobilenet" to switch models
+MODEL_TYPE = "resnet"  # change to "mobilenet" to switch models
 
 # Load Dataset
 dataset = GeolocationDataset(csv_file=CSV_PATH, transform=transform)
