@@ -56,7 +56,7 @@ transform = transforms.Compose([
 # Load Dataset
 csv_path = "dataset/finaldata.csv" 
 dataset = GeolocationDataset(csv_file=csv_path, transform=transform)
-dataloader = DataLoader(dataset, batch_size=16, shuffle=True, num_workers=2)
+dataloader = DataLoader(dataset, batch_size=16, shuffle=True, num_workers=0)
 
 # Check if it loads correctly
 sample_image, sample_target = next(iter(dataloader))
