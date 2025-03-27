@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from architectures.resnet import ResNetGeo
-from architectures.mobilenet import MobileNetGeo
+from architectures.resnet import ResNetGeolocation
+from architectures.mobilenet import MobileNetGeolocation
 from model.utils.dataloader import GeolocationDataset, transform
 import os
 
@@ -21,9 +21,9 @@ dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_worker
 
 # Select Model
 if MODEL_TYPE == "resnet":
-    model = ResNetGeo().to(DEVICE)
+    model = ResNetGeolocation().to(DEVICE)
 elif MODEL_TYPE == "mobilenet":
-    model = MobileNetGeo().to(DEVICE)
+    model = MobileNetGeolocation().to(DEVICE)
 else:
     raise ValueError("Invalid MODEL_TYPE. Choose 'resnet' or 'mobilenet'.")
 
