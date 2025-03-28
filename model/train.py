@@ -13,6 +13,14 @@ import os
     
 if __name__ == "__main__":
 
+    torch.cuda.set_device(0)
+
+    # Debugging: Check if CUDA is available and which device is being used
+    print(f"Torch CUDA Available: {torch.cuda.is_available()}")
+    print(f"CUDA Device Name: {torch.cuda.get_device_name(0)}")
+    print(f"CUDA Device Count: {torch.cuda.device_count()}")
+    print(f"CUDA Current Device: {torch.cuda.current_device()}")
+
     print("Using Python:", sys.executable)
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -20,7 +28,7 @@ if __name__ == "__main__":
 
     # Configurations
     CSV_PATH = "dataset/finaldata.csv"  # Update if needed
-    BATCH_SIZE = 16
+    BATCH_SIZE = 64
     NUM_EPOCHS = 20
     LEARNING_RATE = 0.001
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
