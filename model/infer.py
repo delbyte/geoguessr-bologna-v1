@@ -19,6 +19,16 @@ args = parser.parse_args()
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# Dataset min/max latitudes and longitudes
+lat_min, lat_max = 44.4210532, 44.556094
+lon_min, lon_max = 11.2296206, 11.4336079
+
+# Function to denormalize predictions
+def denormalize(normalized_lat, normalized_lon, lat_min, lat_max, lon_min, lon_max):
+    lat = normalized_lat * (lat_max - lat_min) + lat_min
+    lon = normalized_lon * (lon_max - lon_min) + lon_min
+    return lat, lon
+
 # Define image transformations
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -46,8 +56,10 @@ model.eval()
 with torch.no_grad():
     output = model(img)
 
-# Extract predicted coordinates
-predicted_lat, predicted_lon = output[0].cpu().numpy()
+# Extract predicted coordinates and de-normalize
+normalized_lat, normalized_lon = output[0].cpu().numpy()
+predicted_lat, predicted_lon = denormalize(normalized_lat, normalized_lon, lat_min, lat_max, lon_min, lon_max)
+
 print(f"Predicted Coordinates: {predicted_lat:.4f}, {predicted_lon:.4f}")
 
 # Reverse geocode the predicted location
